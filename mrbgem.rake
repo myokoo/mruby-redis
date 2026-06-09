@@ -18,12 +18,17 @@ MRuby::Gem::Specification.new('mruby-redis') do |spec|
 
   FileUtils.mkdir_p build_dir
 
+  # hiredis を安定版 tag に固定する。pin しないと master(HEAD) を取得するため、上流の
+  # breaking change でビルドが壊れる (master の read.c が ffc.h を include し、未定義の
+  # FFC_DEBUG マクロが -Werror=undef で fail する。ffc.h は v1.4.0 以降に同梱)。
+  # macOS は従来どおり v0.13.3、それ以外は ffc.h 導入前の最新安定版 v1.3.0 に固定する。
+  hiredis_tag = `uname` =~ /Darwin/ ? 'v0.13.3' : 'v1.3.0'
+
   if ! File.exist? hiredis_dir
     Dir.chdir(build_dir) do
       e = {}
       run_command e, 'git clone https://github.com/redis/hiredis.git'
-      # Latest HIREDIS is not compatible for OS X
-      run_command e, "git --git-dir=#{hiredis_dir}/.git --work-tree=#{hiredis_dir} checkout v0.13.3" if `uname` =~ /Darwin/
+      run_command e, "git --git-dir=#{hiredis_dir}/.git --work-tree=#{hiredis_dir} checkout #{hiredis_tag}"
     end
   end
 
